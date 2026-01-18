@@ -1,9 +1,7 @@
-# Debian 11 (bullseye) ainda tem suporte LTS para i386.[web:6][web:15]
 FROM --platform=i386 i386/debian:bullseye
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Atualização + instalação em uma só layer, sem caches de APT.[web:7]
 RUN apt-get update \
  && apt-get -y upgrade \
  && apt-get -y install --no-install-recommends \
@@ -35,26 +33,27 @@ RUN apt-get update \
         netcat-openbsd \
  && rm -rf /var/lib/apt/lists/*
 
-# Criação de usuário não root.[web:7]
+# root com senha conhecida (apenas para laboratório / WebVM)
+RUN echo 'root:password' | chpasswd
+
+# usuário extra opcional
 RUN useradd -m user && echo "user:password" | chpasswd
 
-# Copia exemplos com permissões do usuário.
-COPY --chown=user:user ./examples /home/user/examples
+# Diretório “oficial” de dados que o WebVM pode tratar como disco persistente
+RUN mkdir -p /home/user/dados \
+ && chown -R root:root /home/user
+
+COPY --chown=root:root ./examples /home/user/examples
 RUN chmod -R +x /home/user/examples/lua
 
 WORKDIR /home/user/
 
 ENV HOME="/home/user" \
     TERM="xterm" \
-    USER="user" \
+    USER="root" \
     SHELL="/bin/bash" \
     EDITOR="vim" \
     LANG="en_US.UTF-8" \
     LC_ALL="C"
-
-# Define senha do root (se realmente precisar).
-RUN echo 'root:password' | chpasswd
-
-USER user
 
 CMD ["/bin/bash"]
